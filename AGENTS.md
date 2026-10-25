@@ -15,3 +15,11 @@ Compare each release against its immediate predecessor. Preserve approval pathwa
 Main navigation should group related tasks and open actual working content in one step. Lists/forms may scroll; keep text readable. Assessment observation dates use a selectable calendar, default to UK today for a new record, and remain separate from the automatic approval timestamp.
 
 Run `npm test` and an Expo iOS export before preparing a test release. Mocked screen checks do not establish physical phone layout fit. This is a device-local prototype: do not claim cross-phone message delivery, server-enforced authorisation/deletion, or Apple submission without evidence.
+
+## Bouldering, hire and private messages
+
+Bouldering is experience, not a competence approval. Do not reintroduce indoor/outdoor bouldering approval categories or gate bouldering trips on them. Retain professional bouldering instructor qualifications as declared education, separate from participation approval. Preserve historical audit entries when migrating existing assessment data.
+
+Bouldering mat hire is optional per bouldering trip (UK or international), quantity-based, priced per mat for the whole trip. Reserve stock while payment is pending; require organiser/committee/admin bank-payment confirmation before confirming. Payment links require a configured provider and backend: never infer payment success from opening/returning from a URL.
+
+Only conversation participants may read message content. This overrides administrator all-features access: no admin/committee/operator reading, plaintext logging, notification previews or escrow keys. A reviewed end-to-end encryption implementation and service are prerequisites for enabling real messaging. Current send is deliberately blocked; do not restore plaintext demo entry as a shortcut. Show the deletion warning before messaging: each direct/organiser message seven days, lift messages at trip end. Do not promise that recipients cannot copy or screenshot.

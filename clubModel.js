@@ -1,7 +1,7 @@
 const access=require('./access');
 // Local TestFlight model. A shared service must enforce the same rules server-side.
 const categories = {
- indoorTop:'Indoor — top-rope', indoorLead:'Indoor — lead', indoorBoulder:'Indoor bouldering', outdoorBoulder:'Outdoor bouldering',
+ indoorTop:'Indoor — top-rope', indoorLead:'Indoor — lead',
  sportTop:'Outdoor sport — top-rope only', sportLead:'Outdoor sport — lead', tradSecond:'Single-pitch trad — second only', tradLead:'Single-pitch trad — lead',
  multiTradSecond:'Multi-pitch trad — second only', multiTradLead:'Multi-pitch trad — lead', multiSportSecond:'Multi-pitch sport — second only', multiSportLead:'Multi-pitch sport — lead',
 };
@@ -30,10 +30,10 @@ function assess(state,actor,member,decision,now=Date.now(),role) {
  const after={...decision,categories:[...decision.categories],skills:[...decision.skills],assessor:actor,at:now};
  return audit({...state,assessments:{...state.assessments,[member]:after}},{type:'Competence decision',member,before:state.assessments[member]||null,after,adminOverride:role==='Club Administrator'},actor,now);
 }
-function publicApproval(state,member) { return (state.assessments[member]?.categories||[]).map(key=>({key,label:categories[key]})); }
+function publicApproval(state,member) { return (state.assessments[member]?.categories||[]).filter(key=>categories[key]).map(key=>({key,label:categories[key]})); }
 function gaps(state,trip,member) {
  const a=state.assessments[member]||{categories:[],skills:[]};
- return [...(trip.requiredCategories||[]).filter(k=>!a.categories.includes(k)).map(k=>categories[k]),...(trip.requiredSkills||[]).filter(k=>!a.skills.includes(k)).map(k=>skills[k])];
+ return [...(trip.requiredCategories||[]).filter(k=>categories[k]&&!a.categories.includes(k)).map(k=>categories[k]),...(trip.requiredSkills||[]).filter(k=>!a.skills.includes(k)).map(k=>skills[k])];
 }
 function join(state,tripId,member,newcomer=false,now=Date.now()) {
  const trip=state.trips.find(t=>t.id===tripId);if(!trip)throw Error('Trip not found.');

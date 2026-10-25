@@ -20,15 +20,8 @@ function allowed(state,actor,recipients,kind,tripId,offerId){
   const passenger=all.find(n=>n!==offer.driver);if(!svc.requests.some(r=>r.offerId===offerId&&r.member===passenger&&['Requested','Accepted','Declined','Cancelled'].includes(r.status)))throw Error('Request this lift before starting a conversation.');
  }else throw Error('Unknown conversation type.');
 }
-function send(state,actor,recipients,body,{kind='direct',tripId=null,offerId=null}={},now=Date.now()){
- allowed(state,actor,recipients,kind,tripId,offerId);
- if(!body.trim()||body.length>2000)throw Error('Enter a message of up to 2,000 characters.');
- const expiresAt=kind==='lift'?tripEnd(state.trips.find(t=>t.id===tripId)):now+7*DAY;if(expiresAt<=now)throw Error('This trip has ended and its lift conversation is closed.');
- const participants=[...new Set([actor,...recipients])].sort();
- const thread=(state.threads||[]).find(t=>t.kind===kind&&t.tripId===tripId&&t.offerId===offerId&&JSON.stringify(t.participants)===JSON.stringify(participants))||{id:m.makeId(),kind,tripId,offerId,participants};
- const message={id:m.makeId(),threadId:thread.id,sender:actor,body:body.trim(),at:now,expiresAt};
- return {...state,threads:[...(state.threads||[]).filter(t=>t.id!==thread.id),thread],messages:[...(state.messages||[]),message],notifications:[...(state.notifications||[]),...recipients.map(to=>({id:m.makeId(),to,message:`New ${kind==='lift'?'lift ':''}message from ${actor}`,at:now,expiresAt,threadId:thread.id}))]};
-}
+function send(){throw Error('Private messaging is unavailable until end-to-end encryption is connected.');}
+
 function visibleMessages(state,actor,threadId,now=Date.now()){const thread=(state.threads||[]).find(t=>t.id===threadId);if(!thread||!thread.participants.includes(actor))return [];return(state.messages||[]).filter(m=>m.threadId===threadId&&m.expiresAt>now);}
 function phoneNumber(value){const result=String(value||'').replace(/[\s()-]/g,'');if(!/^\+?\d{8,15}$/.test(result))throw Error('Enter a valid WhatsApp number, including country code if outside the UK.');return result;}
 const CONSENT='I agree to join this trip’s WhatsApp group and understand that my phone number will be visible to other group members.';
@@ -46,7 +39,7 @@ function markWhatsApp(state,tripId,member,actor,role,now=Date.now()){
  if(before.addedAt)throw Error('Already recorded as added.');const after={...before,addedAt:now,addedBy:actor};
  return m.audit({...state,tripContacts:{...state.tripContacts,[tripId]:{...state.tripContacts[tripId],[member]:after}}},{type:'Added to WhatsApp',tripId,member,before,after},actor,now);
 }
-function eventGroup(type){return /lift/i.test(type)?'Lifts':/bunk|payment/i.test(type)?'Accommodation':/WhatsApp/.test(type)?'WhatsApp':/requirements|competence/i.test(type)?'Requirements':/partner|group/i.test(type)?'Partners':/attendance/i.test(type)?'Attendance':/newcomer|joined|withdraw|sign/i.test(type)?'Sign-ups':'Other';}
+function eventGroup(type){return /lift/i.test(type)?'Lifts':/mat reservation|mat payment/i.test(type)?'Mat hire':/bunk|payment/i.test(type)?'Accommodation':/WhatsApp/.test(type)?'WhatsApp':/requirements|competence/i.test(type)?'Requirements':/partner|group/i.test(type)?'Partners':/attendance/i.test(type)?'Attendance':/newcomer|joined|withdraw|sign/i.test(type)?'Sign-ups':'Other';}
 function tripEvents(state,tripId,actor,role,{query='',type='All',from='',to=''}={}){
  if(!m.canReadPrivate(role))return [];
  const q=query.trim().toLowerCase();return(state.audit||[]).filter(e=>e.tripId===tripId).filter(e=>type==='All'||eventGroup(e.type)===type).filter(e=>(!from||new Date(e.at).toISOString().slice(0,10)>=from)&&(!to||new Date(e.at).toISOString().slice(0,10)<=to)).filter(e=>!q||[e.type,e.member,e.actor,JSON.stringify(e.after)].join(' ').toLowerCase().includes(q)).sort((a,b)=>b.at-a.at);
@@ -56,6 +49,6 @@ function actionCounts(state,tripId){
  const attendance=(state.attendance[tripId]||[]),active=attendance.filter(a=>['Booked','Newcomer approved'].includes(a.status)),svc=state.services?.[tripId]||{requests:[],bookings:[]};
  const assigned=new Set(Object.values(state.groups?.[tripId]||{}).flat(2));
  const partners=trip.international?0:active.filter(a=>{const p=state.preferences?.[tripId]?.[a.member];return !assigned.has(a.member)&&!p?.partner&&!(p?.sameThroughout===false&&Object.values(p.dayPartners||{}).some(Boolean));}).length;
- return {requests:attendance.filter(a=>a.status==='Newcomer requested').length+(svc.bookings||[]).filter(b=>b.status==='Awaiting payment'&&b.deadline>Date.now()).length,partners,requirements:active.filter(a=>m.gaps(state,trip,a.member).length).length,whatsApp:active.filter(a=>state.tripContacts?.[tripId]?.[a.member]?.consentedAt&&!state.tripContacts[tripId][a.member].addedAt).length,lifts:(svc.requests||[]).filter(r=>r.status==='Requested').length};
+ return {requests:attendance.filter(a=>a.status==='Newcomer requested').length+(svc.bookings||[]).filter(b=>b.status==='Awaiting payment'&&b.deadline>Date.now()).length,partners,requirements:active.filter(a=>m.gaps(state,trip,a.member).length).length,whatsApp:active.filter(a=>state.tripContacts?.[tripId]?.[a.member]?.consentedAt&&!state.tripContacts[tripId][a.member].addedAt).length,mats:(state.matReservations||[]).filter(r=>r.tripId===tripId&&r.status==='Awaiting payment'&&r.deadline>Date.now()).length,lifts:(svc.requests||[]).filter(r=>r.status==='Requested').length};
 }
 module.exports={DAY,members,CONSENT,tripEnd,prune,allowed,send,visibleMessages,phoneNumber,joinWithWhatsApp,markWhatsApp,eventGroup,tripEvents,actionCounts};
