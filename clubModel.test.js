@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),m=require('./clubModel'),{initial}=require('./demoClub');
 const fresh=()=>JSON.parse(JSON.stringify(initial));
 const now=Date.parse('2026-10-25T12:00:00Z');
-test('only Chair appoints assessors; before and after remain audited',()=>{
- const s=fresh();assert.throws(()=>m.appoint(s,'Stu Block','Club Administrator','Lewis Small',true,'Reason',now));
+test('Chair appoints assessors, with audited administrator override; before and after remain audited',()=>{
+ const s=fresh();assert.throws(()=>m.appoint(s,'Stu Block','Committee Member','Lewis Small',true,'Reason',now));
  const a=m.appoint(s,'Stephen Wilmot','Chair','Lewis Small',true,'Observed assessment experience',now);
  assert.equal(a.assessors['Lewis Small'].active,true);assert.equal(a.audit.at(-1).actor,'Stephen Wilmot');assert.equal(a.audit.at(-1).at,now);assert.equal(a.audit.at(-1).before,null);
  assert.equal(s.assessors['Lewis Small'],undefined);

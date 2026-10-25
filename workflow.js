@@ -9,12 +9,12 @@ function renewalYear(now = new Date()) {
 function available(offer, requests) {
   return Math.max(0, Number(offer.spaces) - requests.filter(r => r.offerId === offer.id && r.status === 'Accepted').reduce((n, r) => n + r.seats, 0));
 }
-function acceptLift(offers, requests, id, actor) {
+function acceptLift(offers, requests, id, actor, role) {
   const r = requests.find(x => x.id === id);
   const offer = r && offers.find(x => x.id === r.offerId);
-  if (!r || !offer || offer.driver !== actor || r.status !== 'Requested') throw Error('Only the driver can accept a pending request.');
+  if (!r || !offer || (offer.driver !== actor && role !== 'Club Administrator') || r.status !== 'Requested') throw Error('Only the driver can accept a pending request.');
   if (!whole(r.seats) || r.seats > available(offer, requests)) throw Error('There are no longer enough spaces.');
-  return requests.map(x => x.id === id ? { ...x, status: 'Accepted' } : x);
+  return requests.map(x => x.id === id ? { ...x, status: 'Accepted', decidedBy:actor, decidedAt:Date.now(), adminOverride:role==='Club Administrator' && offer.driver!==actor } : x);
 }
 function bunkAvailability(capacity, bookings, now = Date.now()) {
   return Math.max(0, Number(capacity) - bookings.filter(b => b.status === 'Confirmed' || (b.status === 'Awaiting payment' && b.deadline > now)).length);
