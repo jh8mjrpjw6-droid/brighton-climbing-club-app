@@ -1,3 +1,4 @@
+const access=require('./access');
 // Local TestFlight model. A shared service must enforce the same rules server-side.
 const categories = {
  indoorTop:'Indoor — top-rope', indoorLead:'Indoor — lead', indoorBoulder:'Indoor bouldering', outdoorBoulder:'Outdoor bouldering',
@@ -7,27 +8,27 @@ const categories = {
 const skills = { topBelay:'Top-rope belaying',leadBelay:'Lead belaying',sportClean:'Cleaning sport anchors',tradSecond:'Seconding trad',multiPitch:'Multi-pitch systems',abseil:'Abseiling',tradLead:'Placing trad protection' };
 const privateRoles=['Chair','Committee Member','Trip Organiser','Club Administrator','Secretary','Membership Secretary','Digital & Media','Social & Culture Secretary','Treasurer'];
 const canReadPrivate = role => privateRoles.includes(role);
-const canManageTrip = (trip,actor,role) => role==='Chair'||role==='Club Administrator'||(role==='Trip Organiser'&&trip.organisers.includes(actor));
-const canAssess = (state,actor) => !!state.assessors[actor]?.active;
+const canManageTrip = (trip,actor,role) => access.allows(role,role==='Chair'||(role==='Trip Organiser'&&trip.organisers.includes(actor)));
+const canAssess = (state,actor,role) => access.allows(role,state.assessors[actor]?.active);
 const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
 const makeId=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 function audit(state,event,actor,now=Date.now()) {
  return {...state,audit:[...state.audit,{...event,id:makeId(),actor,at:now}]};
 }
 function appoint(state,actor,role,member,active,reason,now=Date.now()) {
- if(role!=='Chair')throw Error('Only the Chair can appoint or remove assessors.');
+ if(!access.allows(role,role==='Chair'))throw Error('Only the Chair or Club Administrator can appoint or remove assessors.');
  if(!reason.trim())throw Error('Record the reason for the change.');
  const before=state.assessors[member]||null;
- return audit({...state,assessors:{...state.assessors,[member]:{active,appointedBy:actor,appointedAt:now,reason}}},{type:active?'Assessor appointed':'Assessor removed',member,before,after:{active,reason}},actor,now);
+ return audit({...state,assessors:{...state.assessors,[member]:{active,appointedBy:actor,appointedAt:now,reason}}},{type:active?'Assessor appointed':'Assessor removed',member,before,after:{active,reason},adminOverride:role==='Club Administrator'},actor,now);
 }
-function assess(state,actor,member,decision,now=Date.now()) {
- if(!canAssess(state,actor))throw Error('Only a currently Chair-appointed assessor can record competence.');
+function assess(state,actor,member,decision,now=Date.now(),role) {
+ if(!canAssess(state,actor,role))throw Error('Only a currently Chair-appointed assessor can record competence.');
  if(actor===member)throw Error('Assessments must be recorded by another appointed assessor.');
  if(!decision.notes.trim()||!decision.observedOn||!decision.context.trim())throw Error('Record observation date, context and private notes.');
- if(!validDate(decision.observedOn)||decision.observedOn>new Date(now).toISOString().slice(0,10))throw Error('Use an observation date in YYYY-MM-DD format, no later than today.');
+ if(!validDate(decision.observedOn)||decision.observedOn>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now)))throw Error('Use an observation date in YYYY-MM-DD format, no later than today.');
  if(decision.categories.some(c=>!categories[c])||decision.skills.some(c=>!skills[c]))throw Error('Unknown category or skill.');
  const after={...decision,categories:[...decision.categories],skills:[...decision.skills],assessor:actor,at:now};
- return audit({...state,assessments:{...state.assessments,[member]:after}},{type:'Competence decision',member,before:state.assessments[member]||null,after},actor,now);
+ return audit({...state,assessments:{...state.assessments,[member]:after}},{type:'Competence decision',member,before:state.assessments[member]||null,after,adminOverride:role==='Club Administrator'},actor,now);
 }
 function publicApproval(state,member) { return (state.assessments[member]?.categories||[]).map(key=>({key,label:categories[key]})); }
 function gaps(state,trip,member) {
