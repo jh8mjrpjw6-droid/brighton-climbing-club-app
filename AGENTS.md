@@ -27,3 +27,9 @@ Only conversation participants may read message content. This overrides administ
 ## Event visibility regression guard
 
 List and Calendar must use the same shared `eventsModel.build` source. The default main list is All events: trips, weekly meets, AGM, socials, courses and authorised committee meetings. Do not replace it with a trip-only feed. Test actual visible event classes, attendance entry points and newly created events after restart in both views; retaining screen functions alone is not proof that the features remain reachable.
+
+## Integrated journey rules
+
+The five primary areas are Home, Events, Members, My membership and More. News/Courses remain directly reachable from More; moving a feature must not remove its submissions or approval pathway. Personal payment/booking projections must filter by actor and preserve private-event visibility. A trip booking or event RSVP is not confirmed actual climbing attendance or a competence approval.
+
+My arrangements and organiser task rows must open useful working content directly, without another launcher click. Preserve Back destination for payment/booking entry points. Never use invented unread badges, fixed profile initials or claim a bank/calendar action occurred when only local UI state changed. Keep the complete journey tests as well as individual model tests.
