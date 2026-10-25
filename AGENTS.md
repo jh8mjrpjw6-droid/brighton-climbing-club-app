@@ -23,3 +23,7 @@ Bouldering is experience, not a competence approval. Do not reintroduce indoor/o
 Bouldering mat hire is optional per bouldering trip (UK or international), quantity-based, priced per mat for the whole trip. Reserve stock while payment is pending; require organiser/committee/admin bank-payment confirmation before confirming. Payment links require a configured provider and backend: never infer payment success from opening/returning from a URL.
 
 Only conversation participants may read message content. This overrides administrator all-features access: no admin/committee/operator reading, plaintext logging, notification previews or escrow keys. A reviewed end-to-end encryption implementation and service are prerequisites for enabling real messaging. Current send is deliberately blocked; do not restore plaintext demo entry as a shortcut. Show the deletion warning before messaging: each direct/organiser message seven days, lift messages at trip end. Do not promise that recipients cannot copy or screenshot.
+
+## Event visibility regression guard
+
+List and Calendar must use the same shared `eventsModel.build` source. The default main list is All events: trips, weekly meets, AGM, socials, courses and authorised committee meetings. Do not replace it with a trip-only feed. Test actual visible event classes, attendance entry points and newly created events after restart in both views; retaining screen functions alone is not proof that the features remain reachable.
