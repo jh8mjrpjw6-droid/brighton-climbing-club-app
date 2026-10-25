@@ -1,6 +1,6 @@
 {
   "name": "brighton-climbing-club",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "android": "expo start --android",
     "web": "expo start --web",
-    "test": "node --test workflow.test.js clubModel.test.js ui.test.js"
+    "test": "node --test workflow.test.js clubModel.test.js communicationsModel.test.js ui.test.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
