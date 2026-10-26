@@ -6,9 +6,9 @@ const categories = {
  multiTradSecond:'Multi-pitch trad — second only', multiTradLead:'Multi-pitch trad — lead', multiSportSecond:'Multi-pitch sport — second only', multiSportLead:'Multi-pitch sport — lead',
 };
 const skills = { topBelay:'Top-rope belaying',leadBelay:'Lead belaying',sportClean:'Cleaning sport anchors',tradSecond:'Seconding trad',multiPitch:'Multi-pitch systems',abseil:'Abseiling',tradLead:'Placing trad protection' };
-const privateRoles=['Chair','Committee Member','Trip Organiser','Club Administrator','Secretary','Membership Secretary','Digital & Media','Social & Culture Secretary','Treasurer'];
-const canReadPrivate = role => privateRoles.includes(role);
-const canManageTrip = (trip,actor,role) => access.allows(role,role==='Chair'||(role==='Trip Organiser'&&trip.organisers.includes(actor)));
+const privateRoles=['Trips Committee','Chair','Vice Chair','Digital & Brand Lead','Marketing & Member Engagement Lead','Safeguarding Officer','Committee Member','Trip Organiser','Club Administrator','Secretary','Membership Secretary','Digital & Media','Social & Culture Secretary','Treasurer'];
+const canReadPrivate = role => access.has(role,...privateRoles);
+const canManageTrip = (trip,actor,role) => access.allows(role,access.has(role,'Chair','Trips Committee')||(access.has(role,'Trip Organiser')&&trip?.organisers?.includes(actor)));
 const canAssess = (state,actor,role) => access.allows(role,state.assessors[actor]?.active);
 const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
 const makeId=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -16,10 +16,10 @@ function audit(state,event,actor,now=Date.now()) {
  return {...state,audit:[...state.audit,{...event,id:makeId(),actor,at:now}]};
 }
 function appoint(state,actor,role,member,active,reason,now=Date.now()) {
- if(!access.allows(role,role==='Chair'))throw Error('Only the Chair or Club Administrator can appoint or remove assessors.');
+ if(!access.allows(role,access.has(role,'Chair')))throw Error('Only the Chair or Club Administrator can appoint or remove assessors.');
  if(!reason.trim())throw Error('Record the reason for the change.');
  const before=state.assessors[member]||null;
- return audit({...state,assessors:{...state.assessors,[member]:{active,appointedBy:actor,appointedAt:now,reason}}},{type:active?'Assessor appointed':'Assessor removed',member,before,after:{active,reason},adminOverride:role==='Club Administrator'},actor,now);
+ return audit({...state,assessors:{...state.assessors,[member]:{active,appointedBy:actor,appointedAt:now,reason}}},{type:active?'Assessor appointed':'Assessor removed',member,before,after:{active,reason},adminOverride:access.has(role,'Club Administrator')},actor,now);
 }
 function assess(state,actor,member,decision,now=Date.now(),role) {
  if(!canAssess(state,actor,role))throw Error('Only a currently Chair-appointed assessor can record competence.');
@@ -28,7 +28,7 @@ function assess(state,actor,member,decision,now=Date.now(),role) {
  if(!validDate(decision.observedOn)||decision.observedOn>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now)))throw Error('Use an observation date in YYYY-MM-DD format, no later than today.');
  if(decision.categories.some(c=>!categories[c])||decision.skills.some(c=>!skills[c]))throw Error('Unknown category or skill.');
  const after={...decision,categories:[...decision.categories],skills:[...decision.skills],assessor:actor,at:now};
- return audit({...state,assessments:{...state.assessments,[member]:after}},{type:'Competence decision',member,before:state.assessments[member]||null,after,adminOverride:role==='Club Administrator'},actor,now);
+ return audit({...state,assessments:{...state.assessments,[member]:after}},{type:'Competence decision',member,before:state.assessments[member]||null,after,adminOverride:access.has(role,'Club Administrator')},actor,now);
 }
 function publicApproval(state,member) { return (state.assessments[member]?.categories||[]).filter(key=>categories[key]).map(key=>({key,label:categories[key]})); }
 function gaps(state,trip,member) {
@@ -36,7 +36,8 @@ function gaps(state,trip,member) {
  return [...(trip.requiredCategories||[]).filter(k=>categories[k]&&!a.categories.includes(k)).map(k=>categories[k]),...(trip.requiredSkills||[]).filter(k=>!a.skills.includes(k)).map(k=>skills[k])];
 }
 function join(state,tripId,member,newcomer=false,now=Date.now()) {
- const trip=state.trips.find(t=>t.id===tripId);if(!trip)throw Error('Trip not found.');
+ require('./accountModel').requireMember(state,member,now);
+ const trip=state.trips.find(t=>t.id===tripId);if(!trip||trip.approvalStatus!=='Approved')throw Error('This trip is not published.');
  if(trip.endDate<new Date(now).toISOString().slice(0,10))throw Error('This trip has finished.');
  const arr=state.attendance[tripId]||[];
  if(arr.some(a=>a.member===member&&!['Cancelled','Declined'].includes(a.status)))throw Error('You already have a place or request on this trip.');

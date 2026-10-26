@@ -1,7 +1,8 @@
+const access=require('./access');
 const m=require('./clubModel'),c=require('./communicationsModel'),DAY=86400000;
 const boulderKeys=['indoorBoulder','outdoorBoulder'];
 const isBoulder=t=>t?.types?.includes('Bouldering');
-const canManage=(trip,actor,role)=>m.canManageTrip(trip,actor,role)||(m.canReadPrivate(role)&&role!=='Trip Organiser');
+const canManage=(trip,actor,role)=>m.canManageTrip(trip,actor,role)||(m.canReadPrivate(role)&&!access.only(role,'Trip Organiser'));
 const active=(r,now)=>r.status==='Confirmed'||(r.status==='Awaiting payment'&&r.deadline>now);
 function available(state,tripId,now=Date.now()){const t=state.trips.find(t=>t.id===tripId);return Math.max(0,Number(t?.matStock||0)-(state.matReservations||[]).filter(r=>r.tripId===tripId&&active(r,now)).reduce((n,r)=>n+r.quantity,0));}
 function bankReady(bank){return !!bank?.accountName?.trim()&&/^\d{6}$/.test((bank.sortCode||'').replace(/\D/g,''))&&/^\d{8}$/.test(bank.accountNumber||'');}
@@ -24,11 +25,11 @@ function reserve(state,tripId,actor,quantity,now=Date.now()){
 function approve(state,id,actor,role,paid,now=Date.now()){
  const r=(state.matReservations||[]).find(r=>r.id===id),t=state.trips.find(t=>t.id===r?.tripId);
  if(!r||!t||!canManage(t,actor,role)||!paid||r.status!=='Awaiting payment'||r.deadline<=now)throw Error('Approval requires authorised access, confirmed bank payment and an unexpired reservation.');
- const after={...r,status:'Confirmed',confirmedBy:actor,confirmedAt:now};return m.audit({...state,notifications:[...(state.notifications||[]),{id:m.makeId(),to:r.member,at:now,message:`Your ${r.quantity} mat(s) for ${t.title} are confirmed.`}],matReservations:state.matReservations.map(x=>x.id===id?after:x)},{type:'Mat payment confirmed',tripId:r.tripId,member:r.member,before:r,after,adminOverride:role==='Club Administrator'},actor,now);
+ const after={...r,status:'Confirmed',confirmedBy:actor,confirmedAt:now};return m.audit({...state,notifications:[...(state.notifications||[]),{id:m.makeId(),to:r.member,at:now,message:`Your ${r.quantity} mat(s) for ${t.title} are confirmed.`}],matReservations:state.matReservations.map(x=>x.id===id?after:x)},{type:'Mat payment confirmed',tripId:r.tripId,member:r.member,before:r,after,adminOverride:access.has(role,'Club Administrator')},actor,now);
 }
 function cancel(state,id,actor,role,now=Date.now()){
  const r=(state.matReservations||[]).find(r=>r.id===id),t=state.trips.find(t=>t.id===r?.tripId);if(!r||!t||(!canManage(t,actor,role)&&!(actor===r.member&&r.status==='Awaiting payment'))||r.status==='Cancelled')throw Error('Contact the organiser to change a paid reservation.');
- const after={...r,status:'Cancelled',cancelledAt:now,cancelledBy:actor};return m.audit({...state,notifications:[...(state.notifications||[]),...[...new Set([r.member,...t.organisers])].map(to=>({id:m.makeId(),to,at:now,message:`Mat reservation for ${r.member} on ${t.title} cancelled. Check any payment or refund separately.`}))],matReservations:state.matReservations.map(x=>x.id===id?after:x)},{type:'Mat reservation cancelled',tripId:r.tripId,member:r.member,before:r,after,adminOverride:role==='Club Administrator'},actor,now);
+ const after={...r,status:'Cancelled',cancelledAt:now,cancelledBy:actor};return m.audit({...state,notifications:[...(state.notifications||[]),...[...new Set([r.member,...t.organisers])].map(to=>({id:m.makeId(),to,at:now,message:`Mat reservation for ${r.member} on ${t.title} cancelled. Check any payment or refund separately.`}))],matReservations:state.matReservations.map(x=>x.id===id?after:x)},{type:'Mat reservation cancelled',tripId:r.tripId,member:r.member,before:r,after,adminOverride:access.has(role,'Club Administrator')},actor,now);
 }
 function migrate(state){
  if(state.usability19Migrated)return state;

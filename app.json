@@ -3,7 +3,7 @@
     "name": "Brighton Climbing Club",
     "slug": "brighton-climbing-club",
     "owner": "stublocks-team",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,19 +16,28 @@
           "resizeMode": "contain",
           "backgroundColor": "#12633A"
         }
+      ],
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a profile photo for your BCC membership.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "org.brightonclimbingclub.app",
-      "buildNumber": "15",
+      "buildNumber": "16",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "org.brightonclimbingclub.app",
-      "versionCode": 15,
+      "versionCode": 16,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#12633A"

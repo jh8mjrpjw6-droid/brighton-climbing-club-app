@@ -8,6 +8,7 @@ function prune(state,now=Date.now()){
  return {...state,messages,threads,notifications};
 }
 function allowed(state,actor,recipients,kind,tripId,offerId){
+ const members=require('./accountModel').memberNames(state);
  if(!members.includes(actor)||!recipients.length||recipients.some(n=>!members.includes(n)||n===actor))throw Error('Choose another club member.');
  if(kind==='direct'){if(recipients.length!==1)throw Error('Direct messaging is one-to-one.');if(recipients.some(n=>state.privacy?.[n]?.contactable===false||state.privacy?.[n]?.directoryVisible===false))throw Error('This member is not accepting direct messages.');}
  else if(kind==='organiser'){
