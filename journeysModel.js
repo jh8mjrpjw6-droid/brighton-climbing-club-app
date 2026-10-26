@@ -12,7 +12,7 @@ function payments(state,actor,now=Date.now()){
 }
 function arrangements(state,trip,actor,now=Date.now()){
  const svc=state.services?.[trip.id]||{},mine=(state.attendance[trip.id]||[]).find(a=>a.member===actor&&liveBooking(a)),out=[];
- if(mine)out.push({kind:'Trip place',status:mine.status,detail:mine.status==='Newcomer requested'?'Awaiting organiser decision':'Your trip place is recorded'});
+ if(mine)out.push({kind:'Trip place',status:mine.status,detail:mine.status==='Waitlisted'?'Waiting list only — no confirmed place':mine.status==='Newcomer requested'?'Awaiting organiser decision':'Your trip place is recorded'});
  if(trip.liftShare&&!trip.international){const r=(svc.requests||[]).find(r=>r.member===actor&&['Requested','Accepted'].includes(r.status)),offer=(svc.offers||[]).find(o=>o.driver===actor);out.push({kind:'Travel & lifts',status:offer?'Offering a lift':r?.status==='Accepted'?'Confirmed':r?'Awaiting driver':'Not arranged',detail:offer?`${offer.spaces} passenger spaces offered`:r?'Driver confirmation is required':'Optional',focus:'Travel'});}
  if(trip.bunk){const r=(svc.bookings||[]).filter(r=>r.member===actor).at(-1);out.push({kind:'Accommodation',status:r?(r.status==='Awaiting payment'&&r.deadline<=now?'Expired':r.status):'Not reserved',detail:r?.status==='Awaiting payment'?'View bank transfer details':'Optional',focus:'Accommodation'});}
  if(trip.matHire&&trip.types.includes('Bouldering')){const r=(state.matReservations||[]).filter(r=>r.tripId===trip.id&&r.member===actor).at(-1);out.push({kind:'Hire bouldering mats',status:r?(r.status==='Awaiting payment'&&r.deadline<=now?'Expired':r.status):'Not reserved',detail:r?`${r.quantity} mat(s)`:'Optional',focus:'Mats'});}
@@ -22,7 +22,8 @@ function arrangements(state,trip,actor,now=Date.now()){
 }
 module.exports={bookings,payments,arrangements};
 function respond(state,eventId,actor,role,attending,now=Date.now()){
- const event=events.build(state,actor,role,now).find(e=>e.id===eventId);if(!event||event.mainTrip)throw Error('Open a visible club event to record attendance.');
+ const event=events.build(state,actor,role,now).find(e=>e.id===eventId);if(!event||event.mainTrip||event.cancelled)throw Error('Open a visible club event to record attendance.');
+ if(attending)require('./accountModel').requireMember(state,actor,now);
  const before=state.eventResponses?.[eventId]?.[actor]||null,after={attending:!!attending,updatedAt:now};
  const next=club.audit({...state,eventResponses:{...state.eventResponses,[eventId]:{...state.eventResponses?.[eventId],[actor]:after}}},{type:'Event attendance response',eventId,member:actor,before,after},actor,now);
  const recipients=event.type==='Social'?Object.entries(state.roleAssignments||{}).filter(([,roles])=>roles.includes('Social & Culture Secretary')).map(([name])=>name):[];

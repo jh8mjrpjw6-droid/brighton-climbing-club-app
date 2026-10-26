@@ -1,3 +1,4 @@
+const access=require('./access');
 // Pure transitions shared by the prototype UI and tests. Live use requires server transactions.
 const DAY = 86400000;
 const whole = value => Number.isInteger(Number(value)) && Number(value) > 0;
@@ -12,9 +13,9 @@ function available(offer, requests) {
 function acceptLift(offers, requests, id, actor, role) {
   const r = requests.find(x => x.id === id);
   const offer = r && offers.find(x => x.id === r.offerId);
-  if (!r || !offer || (offer.driver !== actor && role !== 'Club Administrator') || r.status !== 'Requested') throw Error('Only the driver can accept a pending request.');
+  if (!r || !offer || (offer.driver !== actor && !access.has(role,'Club Administrator')) || r.status !== 'Requested') throw Error('Only the driver can accept a pending request.');
   if (!whole(r.seats) || r.seats > available(offer, requests)) throw Error('There are no longer enough spaces.');
-  return requests.map(x => x.id === id ? { ...x, status: 'Accepted', decidedBy:actor, decidedAt:Date.now(), adminOverride:role==='Club Administrator' && offer.driver!==actor } : x);
+  return requests.map(x => x.id === id ? { ...x, status: 'Accepted', decidedBy:actor, decidedAt:Date.now(), adminOverride:access.has(role,'Club Administrator') && offer.driver!==actor } : x);
 }
 function bunkAvailability(capacity, bookings, now = Date.now()) {
   return Math.max(0, Number(capacity) - bookings.filter(b => b.status === 'Confirmed' || (b.status === 'Awaiting payment' && b.deadline > now)).length);

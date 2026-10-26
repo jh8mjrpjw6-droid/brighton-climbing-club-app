@@ -33,3 +33,11 @@ List and Calendar must use the same shared `eventsModel.build` source. The defau
 The five primary areas are Home, Events, Members, My membership and More. News/Courses remain directly reachable from More; moving a feature must not remove its submissions or approval pathway. Personal payment/booking projections must filter by actor and preserve private-event visibility. A trip booking or event RSVP is not confirmed actual climbing attendance or a competence approval.
 
 My arrangements and organiser task rows must open useful working content directly, without another launcher click. Preserve Back destination for payment/booking entry points. Never use invented unread badges, fixed profile initials or claim a bank/calendar action occurred when only local UI state changed. Keep the complete journey tests as well as individual model tests.
+
+## Version 2.2 restoration rules
+
+Trips Committee may assign/remove Trip Organiser only and may manage/publish every official trip. Only Club Administrator assigns Trips Committee or other committee/admin roles. Use accountModel.assignRole and tripPublicationModel.publish; preserve the protected maintainer account. Account roles combine through access.has/allows. Explicit Test settings overrides are session-only and reset when identity changes; normal access uses saved account roles.
+
+Keep news, partner courses/requests, notification preferences, event venues/contacts/cancellations and file references in the persisted club store. Catalogue choices must derive from member records. Event overrides must project consistently into Home, List and Calendar. Restrict pending/expired membership at booking model boundaries. Waiting-list rows reserve no capacity; promotion rechecks eligibility, allocation and capacity without granting competence.
+
+Photo/menu/news attachment pickers copy selected files into app document storage. Keep real attachment references and privacy preferences. These native pickers and icon changes require a new native TestFlight build, not just an over-the-air JS update. Never claim a file was uploaded to a server: this remains local storage.

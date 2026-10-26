@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict');
+const {createRequire} = require('node:module');
+const appRequire = createRequire(require('node:path').resolve('package.json'));
+const expoRequire = createRequire(appRequire.resolve('expo/package.json'));
+const iconRequire = createRequire(appRequire.resolve('@expo/vector-icons/package.json'));
+const bundled = expoRequire('./bundledNativeModules.json');
+const font = appRequire('expo-font/package.json');
+const expected = bundled['expo-font'];
+assert.equal(font.version.split('.')[0], expected.match(/\d+/)[0], 'expo-font must match the installed Expo SDK');
+assert.equal(iconRequire.resolve('expo-font/package.json'), appRequire.resolve('expo-font/package.json'), 'Icons must resolve the same native font dependency as the app');
+assert.equal(expoRequire.resolve('expo-font/package.json'), appRequire.resolve('expo-font/package.json'), 'Expo and app must resolve the same native font dependency');
+assert(appRequire('./package.json').dependencies['expo-font'], 'Declare expo-font directly to prevent peer dependency upgrades');
+console.log(`Startup dependency check passed: one expo-font ${font.version} (${expected})`);
